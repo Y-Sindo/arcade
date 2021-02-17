@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -439,7 +440,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string isolatedString = feedConfig.Isolated ? "Isolated" : "Non-Isolated";
                             string internalString = feedConfig.Internal ? $", Internal" : ", Public";
                             string shippingString = package.NonShipping ? "NonShipping" : "Shipping";
-                            Log.LogMessage(MessageImportance.High, $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
+                            if (feedConfig.Type == FeedType.AzureStorageFeed && !package.Id.EndsWith(".symbols.nupkg"))
+                            {
+                                Log.LogMessage(MessageImportance.High,
+                                    $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
+                            }
                         }
 
                         switch (feedConfig.Type)
@@ -448,7 +453,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 publishTasks.Add(PublishPackagesToAzDoNugetFeedAsync(filteredPackages, buildAssets, feedConfig));
                                 break;
                             case FeedType.AzureStorageFeed:
-                                publishTasks.Add(PublishPackagesToAzureStorageNugetFeedAsync(filteredPackages, buildAssets, feedConfig));
+                                HashSet<PackageArtifactModel> blobsToPublish = packages.Where(p => !p.Id.EndsWith(".symbols.nupkg")).ToHashSet();
+                                publishTasks.Add(PublishPackagesToAzureStorageNugetFeedAsync(blobsToPublish, buildAssets, feedConfig));
                                 break;
                             default:
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
@@ -502,7 +508,11 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string isolatedString = feedConfig.Isolated ? "Isolated" : "Non-Isolated";
                             string internalString = feedConfig.Internal ? $", Internal" : ", Public";
                             string shippingString = blob.NonShipping ? "NonShipping" : "Shipping";
-                            Log.LogMessage(MessageImportance.High, $"Blob {blob.Id} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
+                            if (feedConfig.ContentType != TargetFeedContentType.Symbols && feedConfig.Type != FeedType.AzureStorageFeed)
+                            {
+                                Log.LogMessage(MessageImportance.High,
+                                    $"Blob {blob.Id} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
+                            }
                         }
 
                         switch (feedConfig.Type)
@@ -895,6 +905,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             Dictionary<string, HashSet<Asset>> buildAssets,
             TargetFeedConfig feedConfig)
         {
+
             var blobs = blobsToPublish
                 .Select(blob =>
                 {
