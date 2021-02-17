@@ -511,7 +511,12 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                                 publishTasks.Add(PublishBlobsToAzDoNugetFeedAsync(filteredBlobs, buildAssets, feedConfig));
                                 break;
                             case FeedType.AzureStorageFeed:
-                                publishTasks.Add(PublishBlobsToAzureStorageNugetFeedAsync(filteredBlobs, buildAssets, feedConfig));
+                                if (feedConfig.ContentType != TargetFeedContentType.Symbols)
+                                {
+                                    publishTasks.Add(
+                                        PublishBlobsToAzureStorageNugetFeedAsync(filteredBlobs, buildAssets,
+                                            feedConfig));
+                                }
                                 break;
                             default:
                                 Log.LogError($"Unknown target feed type for category '{category}': '{feedConfig.Type}'.");
