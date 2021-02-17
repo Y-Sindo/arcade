@@ -440,7 +440,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                             string isolatedString = feedConfig.Isolated ? "Isolated" : "Non-Isolated";
                             string internalString = feedConfig.Internal ? $", Internal" : ", Public";
                             string shippingString = package.NonShipping ? "NonShipping" : "Shipping";
-                            if (feedConfig.Type == FeedType.AzureStorageFeed && !package.Id.EndsWith(".symbols.nupkg"))
+                            if (feedConfig.Type != FeedType.AzureStorageFeed && package.Id.EndsWith(".symbols.nupkg"))
                             {
                                 Log.LogMessage(MessageImportance.High,
                                     $"Package {package.Id}@{package.Version} ({shippingString}) should go to {feedConfig.TargetURL} ({isolatedString}{internalString})");
