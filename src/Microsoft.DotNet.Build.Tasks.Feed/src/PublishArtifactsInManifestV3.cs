@@ -189,7 +189,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 await Task.WhenAll(new Task[] {
                     HandlePackagePublishingAsync(buildAssets),
                     HandleBlobPublishingAsync(buildAssets),
-                    HandleSymbolPublishingAsync(PdbArtifactsBasePath, MsdlToken,
+                    HandleSymbolPublishingAsync(BlobAssetsBasePath, PdbArtifactsBasePath, MsdlToken,
                         SymWebToken, SymbolPublishingExclusionsFile, temporarySymbolsLocation, PublishSpecialClrFiles)
                 });
 

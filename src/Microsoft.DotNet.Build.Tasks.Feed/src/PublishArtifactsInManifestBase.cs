@@ -327,6 +327,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// <param name="publishSpecialClrFiles">If true, the special coreclr module indexed files like DBI, DAC and SOS are published</param>
         /// <returns></returns>
         public async Task HandleSymbolPublishingAsync (
+            string blobBasePath,
             string pdbArtifactsBasePath,
             string msdlToken, 
             string symWebToken,
@@ -337,7 +338,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             StringBuilder symbolLog = new StringBuilder();
             symbolLog.AppendLine("Publishing Symbols to Symbol server: ");
             
-            string[] fileEntries = Directory.GetFiles(pdbArtifactsBasePath).Where(s=>s.EndsWith("symbols.nupkg")).ToArray();
+            string[] fileEntries = Directory.EnumerateFiles(BlobAssetsBasePath, "*symbols.nupkg", System.IO.SearchOption.TopDirectoryOnly).ToArray();
 
             var category = TargetFeedContentType.Symbols;
 
@@ -355,7 +356,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                 }
 
             foreach (var server in serversToPublish)
-            {
+            { 
                 var serverPath = server.Key;
                 var token = server.Value;
                 symbolLog.AppendLine($"Publishing symbol packages to {serverPath}:");
