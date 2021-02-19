@@ -336,60 +336,52 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         {
             StringBuilder symbolLog = new StringBuilder();
             symbolLog.AppendLine("Publishing Symbols to Symbol server: ");
+            
+            string[] fileEntries = Directory.GetFiles(pdbArtifactsBasePath).Where(s=>s.EndsWith("symbols.nupkg")).ToArray();
 
-            if (Directory.Exists(temporarySymbolsLocation))
-            {
-                string[] fileEntries = Directory.GetFiles(temporarySymbolsLocation);
+            var category = TargetFeedContentType.Symbols;
 
-                var category = TargetFeedContentType.Symbols;
+            HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
 
-                HashSet<TargetFeedConfig> feedConfigsForSymbols = FeedConfigs[category];
-
-                Dictionary<string, string> serversToPublish =
+            Dictionary<string, string> serversToPublish =
                     GetTargetSymbolServers(feedConfigsForSymbols, msdlToken, symWebToken);
-
-                IEnumerable<string> filesToSymbolServer = null;
-                if (Directory.Exists(pdbArtifactsBasePath))
+            
+            IEnumerable<string> filesToSymbolServer = null;
+            if (Directory.Exists(pdbArtifactsBasePath))
                 {
                     var pdbEntries = System.IO.Directory.EnumerateFiles(pdbArtifactsBasePath, "*.pdb", System.IO.SearchOption.AllDirectories);
                     var dllEntries = System.IO.Directory.EnumerateFiles(pdbArtifactsBasePath, "*.dll", System.IO.SearchOption.AllDirectories);
                     filesToSymbolServer = pdbEntries.Concat(dllEntries);
                 }
 
-                foreach (var server in serversToPublish)
-                {
-                    var serverPath = server.Key;
-                    var token = server.Value;
-                    symbolLog.AppendLine($"Publishing symbol packages to {serverPath}:");
-                    symbolLog.AppendLine(
-                        $"Performing symbol publishing...\nSymbolServerPath : ${serverPath} \nExpirationInDays : {ExpirationInDays} \nConvertPortablePdbsToWindowsPdb : false \ndryRun: false \nTotal number of symbol files : {fileEntries.Length} ");
-                    await PublishSymbolsHelper.PublishAsync(
-                        Log,
-                        serverPath,
-                        token,
-                        fileEntries,
-                        filesToSymbolServer,
-                        null,
-                        ExpirationInDays,
-                        false,
-                        publishSpecialClrFiles,
-                        null,
-                        false,
-                        false,
-                        true);
-                    symbolLog.AppendLine("Successfully published to Symbol Server.");
-                    symbolLog.AppendLine();
-                    Log.LogMessage(MessageImportance.High, symbolLog.ToString());
-                    symbolLog.Clear();
-                }
-            }
-            else
+            foreach (var server in serversToPublish)
             {
-                Log.LogError($"Temporary symbols directory {temporarySymbolsLocation} does not exists.");
+                var serverPath = server.Key;
+                var token = server.Value;
+                symbolLog.AppendLine($"Publishing symbol packages to {serverPath}:");
+                symbolLog.AppendLine(
+                    $"Performing symbol publishing...\nSymbolServerPath : ${serverPath} \nExpirationInDays : {ExpirationInDays} \nConvertPortablePdbsToWindowsPdb : false \ndryRun: false \nTotal number of symbol files : {fileEntries.Length} ");
+                await PublishSymbolsHelper.PublishAsync(
+                    Log,
+                    serverPath,
+                    token,
+                    fileEntries,
+                    filesToSymbolServer,
+                    null,
+                    ExpirationInDays,
+                    false,
+                    publishSpecialClrFiles,
+                    null,
+                    false,
+                    false,
+                    true);
+                symbolLog.AppendLine("Successfully published to Symbol Server.");
+                symbolLog.AppendLine();
+                Log.LogMessage(MessageImportance.High, symbolLog.ToString());
+                symbolLog.Clear();
             }
-        }
-
-        /// <summary>
+            }
+            /// <summary>
         /// Get the Symbol Server to publish
         /// </summary>
         /// <param name="feedConfigsForSymbols"></param>
